@@ -20,10 +20,12 @@
         (iter (- y 1) (* y n))))
   (iter x 1))
 
-;; exercise 1.2
-(/ (+ 5 4 (- 2 3 (+ 6 (/ 4 5))))
-   (* 3 (- 6 2) (- 2 7)))
-;; = -1/50 ?
+;; demonstration of lexical closure in action
+(define (timesn n)
+  (define (times x) (* x n))
+  times)
+
+(define times5 (timesn 5))
 
 ;; 1.3
 (define (ex1.3 x y z)
@@ -60,3 +62,13 @@
 
 ;; 1.6 it will go into an infinite loop, since both clauses will
 ;; be unconditionally evaluated
+
+;; 1.8
+(define (cbrt x)
+  (define (cbrt-iter guess prevg)
+    (if (good-enough? guess prevg x)
+        guess
+        (cbrt-iter (improve-cbrt guess) guess)))
+  (define (improve-cbrt guess)
+    (/ (+ (* 2 guess) (/ x (square guess))) 3))
+  (cbrt-iter 1.0 0.0))
