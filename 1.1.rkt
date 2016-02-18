@@ -29,8 +29,7 @@
 
 ;; 1.3
 (define (ex1.3 x y z)
-  (let ([l (cdr (sort (list x y z) <))])
-    (apply sum-of-squares l)))
+  (apply sum-of-squares (cdr (sort (list x y z) <))))
 
 ;; 1.4
 ;; adds a to the absolute value of b
