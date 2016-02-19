@@ -1,5 +1,77 @@
 #lang planet neil/sicp
 
+(define (square x) (* x x))
+
+(define (sum-of-squares x y)
+  (+ (square x) (square y)))
+
+(define (f a)
+  (sum-of-squares (+ a 1) (* a 2)))
+
+(define (fact x)
+  (if (< x 1)
+      1
+      (* x (fact (- x 1)))))
+
+(define (fact2 x)
+  (define (iter y n)
+    (if (< y 1)
+        n
+        (iter (- y 1) (* y n))))
+  (iter x 1))
+
+;; demonstration of lexical closure in action
+(define (timesn n)
+  (define (times x) (* x n))
+  times)
+
+(define times5 (timesn 5))
+
+;; 1.3
+(define (ex1.3 x y z)
+  (apply sum-of-squares (cdr (sort (list x y z) <))))
+
+;; 1.4
+;; adds a to the absolute value of b
+(define (a-plus-abs-b a b)
+  ((if (> b 0) + -) a b))
+
+;; 1.5: in an applicative-order interpreter, (test 0 (p)) will go into
+;; an infinite loop. A normal-order interpreter would return 0.
+
+;; 1.7
+(define (sqrt-iter guess prevg x)
+  (if (good-enough? guess prevg x)
+      guess
+      (sqrt-iter (improve guess x) guess x)))
+
+(define (improve guess x)
+  (average guess (/ x guess)))
+
+(define (average x y)
+  (/ (+ x y) 2))
+
+;; 1.7
+(define (good-enough? guess prevg x)
+  (< (abs (/ (- guess prevg) guess)) 0.000001))
+
+
+(define (sqrt x)
+  (sqrt-iter 1.0 0.0 x))
+
+;; 1.6 it will go into an infinite loop, since both clauses will
+;; be unconditionally evaluated
+
+;; 1.8
+(define (cbrt x)
+  (define (cbrt-iter guess prevg)
+    (if (good-enough? guess prevg x)
+        guess
+        (cbrt-iter (improve-cbrt guess) guess)))
+  (define (improve-cbrt guess)
+    (/ (+ (* 2 guess) (/ x (square guess))) 3))
+  (cbrt-iter 1.0 0.0))
+
 (define (square n)
   (* n n))
 
@@ -161,6 +233,7 @@
                n
                (next test-divisor)))))
 
+
 (define (divides? a b)
   (= (remainder b a) 0))
 
@@ -291,3 +364,133 @@
 
 (define (fc-prime? n)
   (fast-correct-prime? n (ceiling (sqrt n))))
+
+(define (sum term a next b)
+  (if (> a b)
+      0
+      (+ (term a)
+         (sum term (next a) next b))))
+
+(define (integral f a b dx)
+  (define (add-dx x) (+ x dx))
+  (* (sum f (+ a (/ dx 2.0)) add-dx b)
+     dx))
+
+(define (cube n)
+  (* n n n))
+
+;; 1.29
+(define (simpsons f a b n)
+  (let* ((n (if (even? n) n (+ n 1)))
+         (h (/ (- b a) n))
+         (h/3 (/ h 3.0)))
+    (define (y k)
+      (f (+ a (* k h))))
+    (define (term k)
+      (* (y k)
+         (cond
+          ((or (= k 0) (= k n)) 1)
+          ((even? k) 2)
+          (else 4))))
+    (define (next x) (+ 1 x))
+    (* h/3 (sum term 0 next n))))
+
+;; 1.30
+(define (sum-1.30 term a next b)
+  (define (iter a result)
+    (if (> a b)
+        result
+        (iter (next a) (+ (term a) result))))
+  (iter 0 0))
+
+;; 1.31
+;; 1, recursive
+(define (product1 f a next b)
+  (if (> a b)
+      1
+      (* (f a)
+         (product f (next a) next b))))
+
+(define (factorial-recur n)
+  (product1 (λ (x) x) 1 (λ (x) (+ 1 x)) n))
+
+;; 2, iterative
+(define (product2 f a next b)
+  (define (iter a result)
+    (if (> a b)
+        result
+        (iter (next a) (* (f a) result))))
+  (iter a 1))
+
+(define (factorial-iter n)
+  (product2 (λ (x) x) 1 (λ (x) (+ 1 x)) n))
+
+;; https://en.wikipedia.org/wiki/Wallis_product
+;; to get close, n should be like 10,000
+(define (find-pi n)
+  (* 2 (product2 (λ (x)
+                   (* (/ (* 2.0 x) (- (* 2.0 x) 1))
+                      (/ (* 2.0 x) (+ (* 2.0 x) 1))))
+                 1
+                 (λ (x) (+ x 1))
+                 n)))
+
+;; 1.32
+;; 1, iterative
+(define (accumulate-iter combiner null-value term a next b)
+  (define (iter a result)
+    (if (> a b)
+        result
+        (iter (next a) (combiner (term a) result))))
+  (iter a null-value))
+
+(define (factorial-accum-iter n)
+  (accumulate-iter * 1 (λ (x) x) 1 (λ (x) (+ 1 x)) n))
+
+;; 2, recursive
+(define (accumulate-recur combiner null-value term a next b)
+  (if (> a b)
+      null-value
+      (combiner (term a)
+                (accumulate-recur combiner null-value term (next a) next b))))
+
+(define (factorial-accum-recur n)
+  (accumulate-recur * 1 (λ (x) x) 1 (λ (x) (+ 1 x)) n))
+
+;; 1.33
+(define (filtered-accumulate combiner null-value term a next b pred?)
+  (define (iter a result)
+    (if (> a b)
+        result
+        (if (pred? a)
+            (iter (next a) (combiner (term a) result))
+            (iter (next a) result))))
+  (iter a null-value))
+
+(define (sum-of-squares-of-primes a b)
+  (filtered-accumulate + 0 square a (λ (x) (+ 1 x)) b prime?))
+
+(define (find-gcd a b)
+  (define (iter d g)
+    (if (or (> d a) (> d b))
+        g
+        (if (and (divides? d a) (divides? d b))
+            (iter (+ 1 d) d)
+            (iter (+ 1 d) g))))
+  (iter 1 1))
+
+(define (relatively-prime? a b)
+  (= 1 (find-gcd a b)))
+
+(define (ex1.33.2 n)
+  (filtered-accumulate *                                 ; combiner
+                       1                                 ; null value
+                       (λ (x) x)                         ; term (identity)
+                       1                                 ; a
+                       (λ (x) (+ 1 x))                   ; next
+                       n                                 ; b
+                       (λ (x) (relatively-prime? x n)))) ; pred?
+
+;; 1.34
+(define (f g) (g 2))
+;; (f f) -> (f 2) -> (2 2)
