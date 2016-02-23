@@ -596,27 +596,30 @@
 ;; without average dampening, it's 35 iterations; with, it's 11.
 
 ;; 1.37
-;; a C solution from Rosetta Code:
-;; double a, b, r;
-;; 	a = b = r = 0.0;
 
-;; 	unsigned i;
-;; 	for (i = expansions; i > 0; i--) {
-;; 		a = f_a(i);
-;; 		b = f_b(i);
-;; 		r = b / (a + r);
-;; 	}
-;; 	a = f_a(0);
+;; recursive
+(define (cont-frac-r n d k)
+  (define (frac i)
+    (let ((ni (n i))
+          (di (d i)))
+      (if (< i k)
+          (/ ni (+ di (frac (+ 1 i))))
+          (/ ni di))))
+  (frac 0))
 
-;; 	return a + r;
+(define (cont-frac-i n d k)
+  (define (frac i res)
+    (let ((res (/ (n i) (+ (d i) res))))
+      (if (= i 0)
+          res
+          (frac (- i 1) res))))
+  (frac k 0))
 
-
-(define (cont-frac ni di k)
-  (define (iter r i)
-    (let* ((n (ni (+ 1 i)))
-           (d (di i))
-           (r (/ n (+ d r))))
-      (if (= i 1)
-          (/ n (+ r (di 0)))
-          (iter r (- i 1)))))
-  (iter 0.0 k))
+;; 1.38
+(define (euler-d i)
+  (cond
+   ((< i 2) 0)
+   ((= 0 (remainder i 3)) (* 2 (/ i 3)))
+   (else 1)))
+;; racket@> (cont-frac-i (lambda (x) 1.0) euler-d 20)
+;; 0.7182818284590459
