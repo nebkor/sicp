@@ -1,5 +1,9 @@
 #lang planet neil/sicp
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SECTION 1.1
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define (square x) (* x x))
 
 (define (sum-of-squares x y)
@@ -75,7 +79,9 @@
 (define (square n)
   (* n n))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; SECTION 1.2
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; ex1.10
 (define (A x y)
@@ -91,7 +97,7 @@
 
 (define (f n) (A 0 n)) ;; 2n
 (define (g n) (A 1 n)) ;; 2^n
-(define (h n) (A 2 n)) ;; 2^(h(n - 1)) for n > 0
+(define (h n) (A 2 n)) ;; 2^^n
 (define (k n) (* 5 n n)) ;; 5n^2
 
 ;; ex1.11
@@ -116,13 +122,6 @@
      ((= n count) a)
      (else
       (loop (+ a (* 2 b) (* 3 c)) a b (+ 1 count))))))
-
-(define (dr n)
-  (define (iter a b c count)
-    (if (< count 3)
-        n
-        (iter (+ a (* 2 b) (* 3 c)) a b (- count 1))))
-  (iter 2 1 0 n))
 
 ;; 1.12
 (define (pascal r i)
@@ -182,6 +181,7 @@
    (else
     (+ a (mul a (- b 1))))))
 
+;; 1.18
 (define (fast-mul a b)
   (define (iter x y acc)
     (cond
@@ -365,6 +365,10 @@
 (define (fc-prime? n)
   (fast-correct-prime? n (ceiling (sqrt n))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SECTION 1.3
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define (sum term a next b)
   (if (> a b)
       0
@@ -460,16 +464,16 @@
 ;; 1.33
 (define (filtered-accumulate combiner null-value term a next b pred?)
   (define (iter a result)
-    (if (> a b)
-        result
-        (if (pred? a)
-            (iter (next a) (combiner (term a) result))
-            (iter (next a) result))))
+    (cond
+     ((> a b) result)
+     ((pred? a) (iter (next a) (combiner (term a) result)))
+     (else (iter (next a) result))))
   (iter a null-value))
 
 (define (sum-of-squares-of-primes a b)
   (filtered-accumulate + 0 square a (λ (x) (+ 1 x)) b prime?))
 
+;; home-rolled dumb version O(n)
 (define (find-gcd a b)
   (define (iter d g)
     (if (or (> d a) (> d b))
@@ -479,8 +483,14 @@
             (iter (+ 1 d) g))))
   (iter 1 1))
 
+;; or use gcd from section 1.2, O(log n)
+(define (gcd a b)
+  (if (= b 0)
+      a
+      (gcd b (remainder a b))))
+
 (define (relatively-prime? a b)
-  (= 1 (find-gcd a b)))
+  (= 1 (gcd a b)))
 
 (define (ex1.33.2 n)
   (filtered-accumulate *                                 ; combiner
@@ -494,3 +504,119 @@
 ;; 1.34
 (define (f g) (g 2))
 ;; (f f) -> (f 2) -> (2 2)
+
+;; 1.35
+;; use the given fixed-point function to find phi,
+;; where phi is the fixed point value of f(x) = 1 + 1/x
+
+(define fp-tolerance 0.00001)
+
+(define (fixed-point f first-guess)
+  (define (close-enough? v1 v2)
+    (< (abs (- v1 v2))
+       fp-tolerance))
+  (define (try guess)
+    (display guess)
+    (newline)
+    (let ((next (f guess)))
+      (if (close-enough? guess next)
+          next
+          (try next))))
+  (try first-guess))
+
+(define (ad-fixed-point f first-guess)
+  (define (close-enough? v1 v2)
+    (< (abs (- v1 v2))
+       fp-tolerance))
+  (define (try guess)
+    (display guess)
+    (newline)
+    (let ((next (f guess)))
+      (let ((next (/ (+ next guess) 2)))
+        (if (close-enough? guess next)
+            next
+            (try next)))))
+  (try first-guess))
+
+;; racket@> (fixed-point (lambda (x) (+ 1.0 (/ 1.0 x))) 1)
+;; 1.6180327868852458
+
+;; 1.36
+;; racket@> (fixed-point (lambda (x) (/ (log 1000) (log x))) 2.0)
+;; 2.0
+;; 9.965784284662087
+;; 3.004472209841214
+;; 6.279195757507157
+;; 3.759850702401539
+;; 5.215843784925895
+;; 4.182207192401397
+;; 4.8277650983445906
+;; 4.387593384662677
+;; 4.671250085763899
+;; 4.481403616895052
+;; 4.6053657460929
+;; 4.5230849678718865
+;; 4.577114682047341
+;; 4.541382480151454
+;; 4.564903245230833
+;; 4.549372679303342
+;; 4.559606491913287
+;; 4.552853875788271
+;; 4.557305529748263
+;; 4.554369064436181
+;; 4.556305311532999
+;; 4.555028263573554
+;; 4.555870396702851
+;; 4.555315001192079
+;; 4.5556812635433275
+;; 4.555439715736846
+;; 4.555599009998291
+;; 4.555493957531389
+;; 4.555563237292884
+;; 4.555517548417651
+;; 4.555547679306398
+;; 4.555527808516254
+;; 4.555540912917957
+;; 4.555532270803653
+
+;; with average-damping
+;; racket@> (ad-fixed-point (lambda (x) (/ (log 1000) (log x))) 2.0)
+;; 2.0
+;; 5.9828921423310435
+;; 4.922168721308343
+;; 4.628224318195455
+;; 4.568346513136242
+;; 4.5577305909237005
+;; 4.555909809045131
+;; 4.555599411610624
+;; 4.5555465521473675
+;; 4.555537551999825
+;; 4.555534487262465
+
+;; without average dampening, it's 35 iterations; with, it's 11.
+
+;; 1.37
+;; a C solution from Rosetta Code:
+;; double a, b, r;
+;; 	a = b = r = 0.0;
+
+;; 	unsigned i;
+;; 	for (i = expansions; i > 0; i--) {
+;; 		a = f_a(i);
+;; 		b = f_b(i);
+;; 		r = b / (a + r);
+;; 	}
+;; 	a = f_a(0);
+
+;; 	return a + r;
+
+
+(define (cont-frac ni di k)
+  (define (iter r i)
+    (let* ((n (ni (+ 1 i)))
+           (d (di i))
+           (r (/ n (+ d r))))
+      (if (= i 1)
+          (/ n (+ r (di 0)))
+          (iter r (- i 1)))))
+  (iter 0.0 k))
