@@ -720,15 +720,15 @@
 
 ;; 1.46
 (define (iterative-improve improve ge?)
-  (define (ii guess x)
-    (if (ge? guess x)
-        guess
-        (ii (improve guess x) x)))
-  ii)
+  (λ (guess x)
+    (let loop ((next guess))
+      (if (ge? next x)
+          next
+          (loop (improve next x))))))
 
 (define new-sqrt-iter
   (iterative-improve
-   (λ (guess x) (average guess (/ x guess))) ;; improve
+   (λ (guess x) (average guess (/ x guess)))      ;; improve
    (λ (x y) (< (abs (- (square x) y)) 0.00001)))) ;; good-enough?
 
 (define new-sqrt (lambda (x) (new-sqrt-iter 1.0 x)))
