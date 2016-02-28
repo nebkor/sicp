@@ -516,8 +516,6 @@
     (< (abs (- v1 v2))
        fp-tolerance))
   (define (try guess)
-    (display guess)
-    (newline)
     (let ((next (f guess)))
       (if (close-enough? guess next)
           next
@@ -605,12 +603,12 @@
       (if (< i k)
           (/ ni (+ di (frac (+ 1 i))))
           (/ ni di))))
-  (frac 0))
+  (frac 1))
 
 (define (cont-frac-i n d k)
   (define (frac i res)
     (let ((res (/ (n i) (+ (d i) res))))
-      (if (= i 0)
+      (if (= i 1)
           res
           (frac (- i 1) res))))
   (frac k 0))
@@ -623,3 +621,122 @@
    (else 1)))
 ;; racket@> (cont-frac-i (lambda (x) 1.0) euler-d 20)
 ;; 0.7182818284590459
+
+;; 1.39
+(define (tan-cf x k)
+  (let ((n (λ (n)
+             (if (= n 1)
+                 x
+                 (- (square x)))))
+        (d (λ (n) (- (* 2 n) 1))))
+    (cont-frac-i n d k)))
+
+;; 1.40
+;; first, some supporting functions
+(define (average-damp f)
+  (lambda (x)
+    (average x (f x))))
+
+(define dx 0.00001)
+(define (deriv g)
+  (lambda (x)
+    (/ (- (g (+ x dx)) (g x))
+       dx)))
+
+(define (newton-transform g)
+  (lambda (x)
+    (- x (/ (g x)
+            ((deriv g) x)))))
+
+(define (newtons-method g guess)
+  (fixed-point (newton-transform g)
+               guess))
+
+(define (fixed-point-of-transform
+         g transform guess)
+  (fixed-point (transform g) guess))
+
+;; the function asked for
+(define (cubic a b c)
+  (λ (x)
+    (let ((x3 (cube x))
+          (ax2 (* a (square x)))
+          (bx (* b x)))
+      (+ x3 ax2 bx c))))
+
+;; 1.41
+(define (double-f f)
+  (λ (x) (f (f x))))
+
+(define (inc x) (+ 1 x))
+
+;; (((double-f (double-f double-f)) inc) 5) ==> 21
+
+;; 1.42
+(define (compose f g)
+  (λ (x) (f (g x))))
+
+;; 1.43
+(define (repeated f n)
+  (if (= n 1)
+      f
+      (compose f (repeated f (- n 1)))))
+
+;; 1.44
+(define (smooth f)
+  (λ (x) (/ (+
+             (f (- x dx))
+             (f x)
+             (f (+ x dx)))
+            3)))
+
+(define (mk-n-smoothed-f f n)
+  (repeated (smooth f) n))
+
+(define smoothed-5-cube (mk-n-smoothed-f cube 5))
+
+;; 1.45
+(define (fourth-root x)
+  (fixed-point-of-transform
+   (λ (y) (/ x (cube y)))
+   (repeated average-damp 2)
+   1.0))
+
+(define (find-nth-root x n m)
+  (fixed-point-of-transform
+   (λ (y) (/ x (expt y (- n 1))))
+   (repeated average-damp m)
+   1.0))
+
+(define (log-x-base-n x n)
+  (/ (log x) (log n)))
+
+(define log2 (λ (x) (log-x-base-n x 2)))
+
+(define (nth-root x n)
+  (let ((r (ceiling (log2 n)))
+        (f (λ (y) (/ x (expt y (- n 1))))))
+    (fixed-point-of-transform f (repeated average-damp r) 1.0)))
+
+;; 1.46
+(define (iterative-improve improve ge?)
+  (define (ii guess x)
+    (if (ge? guess x)
+        guess
+        (ii (improve guess x) x)))
+  ii)
+
+(define new-sqrt-iter
+  (iterative-improve
+   (λ (guess x) (average guess (/ x guess))) ;; improve
+   (λ (x y) (< (abs (- (square x) y)) 0.00001)))) ;; good-enough?
+
+(define new-sqrt (lambda (x) (new-sqrt-iter 1.0 x)))
+
+(define (new-fp f guess)
+  (define (ge? x _)
+    (< (abs (- (f x) x)) fp-tolerance))
+  ((iterative-improve
+    (λ (x _) (f x))    ;; improve by applying f to x
+    ge?) guess guess)) ;; the two arguments given to the procedure returned by
+                       ;; (iterative-improve ...)
