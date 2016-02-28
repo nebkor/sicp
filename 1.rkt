@@ -734,6 +734,6 @@
 
 (define (ii-fp f guess)
   ((iterative-improve
-    (λ (x) (f x))
+    f
     (λ (x) (< (abs (- (f x) x)) fp-tolerance)))
    guess))
