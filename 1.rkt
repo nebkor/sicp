@@ -720,23 +720,20 @@
 
 ;; 1.46
 (define (iterative-improve improve ge?)
-  (λ (guess x)
-    (let loop ((next guess))
-      (if (ge? next x)
-          next
-          (loop (improve next x))))))
+  (define (ii guess)
+    (if (ge? guess)
+        guess
+        (ii (improve guess))))
+  ii)
 
-(define new-sqrt-iter
-  (iterative-improve
-   (λ (guess x) (average guess (/ x guess)))      ;; improve
-   (λ (x y) (< (abs (- (square x) y)) 0.00001)))) ;; good-enough?
-
-(define new-sqrt (lambda (x) (new-sqrt-iter 1.0 x)))
-
-(define (new-fp f guess)
-  (define (ge? x _)
-    (< (abs (- (f x) x)) fp-tolerance))
+(define (ii-sqrt x)
   ((iterative-improve
-    (λ (x _) (f x))    ;; improve by applying f to x
-    ge?) guess guess)) ;; the two arguments given to the procedure returned by
-                       ;; (iterative-improve ...)
+    (λ (guess) (average guess (/ x guess)))
+    (λ (guess) (< (abs (- (square guess) x)) 0.00001)))
+   1.0))
+
+(define (ii-fp f guess)
+  ((iterative-improve
+    (λ (x) (f x))
+    (λ (x) (< (abs (- (f x) x)) fp-tolerance)))
+   guess))
