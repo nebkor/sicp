@@ -160,3 +160,122 @@
 ;; it gets from kdr.
 (define (kdr z)
   (z (λ (p q) q)))
+
+;; 2.5
+;; show that we can represent pairs of non-negative integers
+;; by expressing them as the product of (* (expt 2 a) (expt 3 b)),
+;; where a and b are the integers.
+(define (icons a b)
+  (* (expt 2 a) (expt 3 b)))
+
+(define (find-dividing-expt n base)
+  (define (iter try)
+    (if (= 0 (remainder n (expt base try)))
+        (iter (+ 1 try))
+        (- try 1)))
+  (iter 1))
+
+(define (icar c)
+  (find-dividing-expt c 2))
+
+(define (icdr c)
+  (find-dividing-expt c 3))
+
+;; 2.6
+(define zero (lambda (f) (lambda (x) x)))
+
+(define (add-1 n)
+  (lambda (f) (lambda (x) (f ((n f) x)))))
+
+;; one -> (add-1 zero)
+;; (add-1 (lambda (f) (lambda (x) x)))
+;; ((lambda (f) (lambda (x) (f ((n f) x)))) (lambda (f) (lambda (x) x)))
+;; ((lambda (f) (lambda (x) (f (((lambda (f) (lambda (x) x))) x)))))
+;; (lambda (f) (lambda (x) (f x)))
+;;(define one (lambda (f) (lambda (x) (f x))))
+
+;; could also define like:
+(define (one f)
+  (λ (x) (f x)))
+
+(define two (lambda (f) (lambda (x) (f (f x)))))
+
+(define (inc n)
+  (+ 1 n))
+
+(define (add-church m n)
+  (λ (f) (λ (x) ((m f) ((n f) x)))))
+
+;; racket@> ((one inc) 0)
+;; 1
+;; racket@> ((two inc) 0)
+;; 2
+;; racket@> (((add-church one two) inc) 0)
+;; 3
+
+;; Section 2.1.4: Extended Exercise: Interval Arithmetic
+
+(define (add-interval x y)
+  (make-interval (+ (lower-bound x)
+                    (lower-bound y))
+                 (+ (upper-bound x)
+                    (upper-bound y))))
+
+(define (mul-interval x y)
+  (let ((p1 (* (lower-bound x)
+               (lower-bound y)))
+        (p2 (* (lower-bound x)
+               (upper-bound y)))
+        (p3 (* (upper-bound x)
+               (lower-bound y)))
+        (p4 (* (upper-bound x)
+               (upper-bound y))))
+    (make-interval (min p1 p2 p3 p4)
+                   (max p1 p2 p3 p4))))
+
+(define (div-interval x y)
+  (mul-interval x
+                (make-interval
+                 (/ 1.0 (upper-bound y))
+                 (/ 1.0 (lower-bound y)))))
+
+(define (make-interval a b) (cons a b))
+
+;; 2.7
+(define upper-bound cdr)
+(define lower-bound car)
+
+;; 2.8
+(define (sub-interval a b)
+  (make-interval (- (lower-bound a)
+                    (upper-bound b))
+                 (- (upper-bound a)
+                    (lower-bound b))))
+
+;; 2.9
+(define (interval-width i)
+  (/ (- (upper-bound i) (lower-bound i))
+     2.0))
+
+;; racket@> (define small (make-interval 0.5 1.5))
+;; racket@> (define big (make-interval 25.0 25.2))
+;; racket@> (interval-width (mul-interval small big))
+;; 12.649999999999999
+;; racket@> (interval-width (add-interval small big))
+;; 0.5999999999999996
+
+;; 2.10
+(define (safe-div-interval x y)
+  (let ((y (if (and (>= (upper-bound y) 0)
+                    (<= (lower-bound y) 0))
+               (make-interval 0 0)
+               y)))
+    (div-interval x y)))
+
+;; racket@> (define large (make-interval 0.0 11.0))
+;; racket@> (div-interval small large)
+;; '(0.045454545454545456 . +inf.0)
+;; racket@> (safe-div-interval small large)
+;; /: division by zero
+
+;; 2.11
