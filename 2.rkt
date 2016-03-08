@@ -184,6 +184,9 @@
 ;; 2.6
 (define zero (lambda (f) (lambda (x) x)))
 
+(define (zero f)
+  (λ (x) x))
+
 (define (add-1 n)
   (lambda (f) (lambda (x) (f ((n f) x)))))
 
@@ -279,3 +282,63 @@
 ;; /: division by zero
 
 ;; 2.11
+;; fuck doing the case-analysis of mul-interval
+
+;; 2.12
+(define (make-center-width c w)
+  (make-interval (- c w) (+ c w)))
+
+(define (interval-center i)
+  (/ (+ (lower-bound i)
+        (upper-bound i))
+     2.0))
+
+(define (make-center-percent c p)
+  (let ((w (* c p 0.01)))
+    (make-center-width c w)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SECTION 2.2
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; 2.17
+(define (last-pair l)
+  (if (null? (cdr l))
+      l
+      (last-pair (cdr l))))
+
+;; 2.18
+;; append definition given in text:
+(define (append list1 list2)
+  (if (null? list1)
+      list2
+      (cons (car list1)
+            (append (cdr list1)
+                    list2))))
+
+;; iterative solution naievly developed without knowledge of
+;; previously given "append" definition; took only a minute or so
+;; to write from scratch. I'm more comfortable thinking in terms
+;; of explicitly accumulating a new thing to return, so this was
+;; my first solution.
+(define (revers l)
+  (define (iter l r)
+    (if (null? l)
+        r
+        (iter (cdr l) (cons (car l) r))))
+  (iter l '()))
+
+;; recursive solution found only after several hours of casually chewing
+;; on the problem. absence of "append" procedure in my ready-to-hand
+;; mental toolkit prevented me from coming up with the right solution
+;; quickly.
+;; also, having to construct a list object for the second argument to
+;; "append" seemed like the wrong thing to do to me, aesthetically,
+;; so much so that I had everything but that in place before I checked
+;; http://www.billthelizard.com/2010/12/sicp-218-reversing-list.html. I
+;; will try to have more confidence in what my intellect is telling me
+;; with regard to things like types when writing code.
+(define (rr l)
+  (if (null? l)
+      l
+      (append (rr (cdr l)) (list (car l)))))

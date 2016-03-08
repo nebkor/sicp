@@ -471,7 +471,7 @@
   (iter a null-value))
 
 (define (sum-of-squares-of-primes a b)
-  (filtered-accumulate + 0 square a (λ (x) (+ 1 x)) b prime?))
+  (filtered-accumulate + 0 square a inc b prime?))
 
 ;; home-rolled dumb version O(n)
 (define (find-gcd a b)
@@ -497,7 +497,7 @@
                        1                                 ; null value
                        (λ (x) x)                         ; term (identity)
                        1                                 ; a
-                       (λ (x) (+ 1 x))                   ; next
+                       inc
                        n                                 ; b
                        (λ (x) (relatively-prime? x n)))) ; pred?
 
@@ -714,7 +714,7 @@
 (define log2 (λ (x) (log-x-base-n x 2)))
 
 (define (nth-root x n)
-  (let ((r (ceiling (log2 n)))
+  (let ((r (floor (log2 n)))
         (f (λ (y) (/ x (expt y (- n 1))))))
     (fixed-point-of-transform f (repeated average-damp r) 1.0)))
 
