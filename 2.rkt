@@ -342,3 +342,41 @@
   (if (null? l)
       l
       (append (rr (cdr l)) (list (car l)))))
+
+;; 2.19
+(define (no-more? cl)
+  (null? cl))
+
+(define (first-denomination cl)
+  (car cl))
+
+(define (except-first-denomination cl)
+  (cdr cl))
+
+;; needed to define previous three to use in updated
+;; given definition of "cc" below.
+(define (cc amount coin-values)
+  (cond ((= amount 0)
+         1)
+        ((or (< amount 0)
+             (no-more? coin-values))
+         0)
+        (else
+         (+ (cc
+             amount
+             (except-first-denomination
+              coin-values))
+            (cc
+             (- amount
+                (first-denomination
+                 coin-values))
+             coin-values)))))
+
+
+;; 2.20
+;; this one definitely feels like a "ok, here's some scheme syntax
+;; we want you to learn; we don't need you to prove a theorem or
+;; anything here, just learn how to do rest arguments in scheme."
+(define (same-parity i . l)
+  (let ((pred (if (even? i) even? odd?)))
+    (cons i (filter pred l))))
