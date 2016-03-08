@@ -374,9 +374,46 @@
 
 
 ;; 2.20
-;; this one definitely feels like a "ok, here's some scheme syntax
+;; this one definitely feels like, "ok, here's some scheme syntax
 ;; we want you to learn; we don't need you to prove a theorem or
 ;; anything here, just learn how to do rest arguments in scheme."
 (define (same-parity i . l)
   (let ((pred (if (even? i) even? odd?)))
     (cons i (filter pred l))))
+
+;; 2.21
+;; complete the following definitions
+;;
+(define (square-list-recursive items)
+  (if (null? items)
+      '()
+      (cons (square (car items)) (square-list-recursive (cdr items)))))
+
+(define (square-list-map items)
+  (map square items))
+
+;; for funsies, do square-list-iter
+;; this took some futzing. interestingly, in order to get the result list
+;; *not* reversed, I had to use the same technique with "append" as
+;; in the recursive reverse function, but there it was needed to reverse
+;; the list.
+(define (square-list-iter items)
+  (define (iter items res)
+    (if (null? items)
+        res
+        (iter (cdr items) (append res (list (square (car items)))))))
+  (iter items '()))
+
+;; so:
+;; append + recursive procedure: reverses input order
+;; append + iterative procedure: maintains input order
+;; cons + recursive procedure: maintains inpute order
+;; cons + iterative procedure: reverses input order
+
+;; oh, and ps: I think it would be fewer operations in square-list-iter
+;; to return (reverse res) and accumulate res in the iter call like:
+;; (iter (cdr items) (cons (square (car items)) res))
+;; per the above chart, but my initial thought was that it would be
+;; wasteful to construct a result list twice. given the above definition
+;; of "append", I think there are more conses done in the version using
+;; "append".
