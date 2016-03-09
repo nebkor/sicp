@@ -15,6 +15,9 @@
 
 (define nil '())
 
+(define (atom? x)
+  (not (pair? x)))
+
 ;; 2.1 supporting
 (define (add-rat x y)
   (make-rat (+ (* (numer x) (denom y))
@@ -447,3 +450,67 @@
       ((λ () ;; idiomatic Scheme would be to use a (begin ...) statement
           (f (car l))
           (foreach f (cdr l))))))
+
+;; digression: count-leaves
+;; given definition, recursive:
+(define (count-leaves x)
+  (cond ((null? x) 0)
+        ((not (pair? x)) 1)
+        (else (+ (count-leaves (car x))
+                 (count-leaves (cdr x))))))
+
+;; 2.24
+;; nah, skip drawing it out
+
+;; 2.25
+;; (car (cdr (car (cdr (cdr '(1 3 (5 7) 9))))))
+;; (car (car '((7))))
+;; (car (cdr (car (cdr (car (cdr (car (cdr (car (cdr (car (cdr '(1 (2 (3 (4 (5 (6 7))))))))))))))))))
+
+;; 2.26
+;; racket@> (append x y)
+;; '(1 2 3 4 5 6)
+;; racket@> (cons x y)
+;; '((1 2 3) 4 5 6)
+;; racket@> (list x y)
+;; '((1 2 3) (4 5 6))
+
+;; 2.27
+(define (deep-reverse l)
+  (if (atom? l)
+      l
+      (append (deep-reverse (cdr l)) (list (deep-reverse (car l))))))
+
+;; racket@> (deep-reverse '((1 (2 3) 4) 5 6 (((7) 8) 9) 10))
+;; '(10 (9 (8 (7))) 6 5 (4 (3 2) 1))
+
+;; 2.28
+;; first pass
+(define (fringe t)
+  (define (iter t res)
+    (cond
+     ((null? t) res)
+     ((atom? (car t)) (iter (cdr t) (append res (list (car t)))))
+     (else
+      (append (iter (car t) res)
+              (iter (cdr t) '())))))
+  (iter t '()))
+
+;; fully recursive
+(define (fringe-recursive t)
+  (cond
+   ((null? t) t)
+   ((atom? t) (list t))
+   (else
+    (append (fringe-recursive (car t))
+            (fringe-recursive (cdr t))))))
+
+;; most iterative
+(define (fringe-iter t)
+  (define (iter t res)
+    (cond
+     ((null? t) res)
+     ((atom? t) (cons t res))
+     (else
+      (iter (car t) (iter (cdr t) res)))))
+  (iter t '()))
