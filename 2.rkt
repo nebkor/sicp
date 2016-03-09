@@ -527,3 +527,65 @@
 ;; '(((1) 2 (3 4)) 5 6 (7 ((8 ((9 10) 11)))) 12 13), as given by the output
 ;; of the counter during running. However, "append" might be more expensive
 ;; than "cons".
+
+;; 2.29
+;; given make-mobile and make-branch
+(define (make-mobile left right)
+  (list left right))
+
+(define (make-branch length structure)
+  (list length structure))
+
+;; define left-branch, right-branch, branch-length, branch-structure,
+;; and total-weight
+(define (left-branch m)
+  (car m))
+
+(define (right-branch m)
+  (cadr m))
+
+(define (branch-length b)
+  (car b))
+
+(define (branch-structure b)
+  (cadr b))
+
+(define (total-weight m)
+  (let ((l (left-branch m))
+        (r (right-branch m)))
+    (let ((ls (branch-structure l))
+          (rs (branch-structure r)))
+      (cond
+       ((and (atom? ls) (atom? rs)) (+ ls rs))
+       ((atom? ls) (+ ls (total-weight rs)))
+       ((atom? rs) (+ rs (total-weight ls)))
+       (else
+        (+ (total-weight ls) (total-weight rs)))))))
+
+(define test-mobile (make-mobile
+                     (make-branch 3 8)
+                     (make-branch 2
+                                  (make-mobile (make-branch 1 6)
+                                               (make-branch 1 6)))))
+
+;; fuck it, I'm using racket-isms and shit like let*
+(define (balanced-mobile? m)
+  (let* [(l (left-branch m))
+         (r (right-branch m))
+         (ll (branch-length l))
+         (rl (branch-length r))
+         (ls (branch-structure l))
+         (rs (branch-structure r))]
+    (cond
+     [(and (atom? ls) (atom? rs)) (= (* ll ls) (* rl rs))]
+     [(atom? ls) (and (= (* ll ls)
+                         (* rl (total-weight rs)))
+                      (balanced-mobile? rs))]
+     [(atom? rs) (and (= (* rl rs)
+                         (* ll (total-weight ls)))
+                      (balanced-mobile? ls))]
+     [else
+      (and (= (* ll (total-weight ls))
+              (* rl (total-weight rs)))
+           (balanced-mobile? ls)
+           (balanced-mobile? rs))])))
