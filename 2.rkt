@@ -524,7 +524,7 @@
   (iter t '() (mk-counter 0)))
 
 ;; All three solutions take 43 steps to flatten the list
-;; '(((1) 2 (3 4)) 5 6 (7 ((8 ((9 10) 11)))) 12 13), as given by the output
+;; '(((1) 2 (3 4)) 5 6 (7 ((8 ((9 10) 11)))) 12 13), As given by the output
 ;; of the counter during running. However, "append" might be more expensive
 ;; than "cons".
 
@@ -589,3 +589,96 @@
               (* rl (total-weight rs)))
            (balanced-mobile? ls)
            (balanced-mobile? rs))])))
+
+;; try using some smaller functions composed together
+(define (branch-weight b)
+  (let [(s (branch-structure b))]
+    (if (pair? s)
+        (tw s)
+        s)))
+
+;; this total weight function is definitely better than the first one
+(define (tw m)
+  (+ (branch-weight (left-branch m))
+     (branch-weight (right-branch m))))
+
+
+
+(define (branch-torque b)
+  (* (branch-length b) (branch-weight b)))
+
+(define (branch-balanced? b)
+  (let [(s (branch-structure b))]
+    (if (pair? s)
+        (bm? s)
+        #t)))
+
+;; with the two helper functions, this solution is not really shorter
+;; than the first balanced-mobile function, but the intent is much
+;; more clear.
+(define (bm? m)
+  (let* [(l (left-branch m))
+         (r (right-branch m))
+         (lt (branch-torque l))
+         (rt (branch-torque r))]
+    (and (= lt rt)
+         (branch-balanced? l)
+         (branch-balanced? r))))
+
+;; 2.30
+;; first just use the scale-tree implementation as a start
+(define (square-tree tree)
+  (cond ((null? tree) nil)
+        ((not (pair? tree))
+         (square tree))
+        (else
+         (cons (square-tree (car tree))
+               (square-tree (cdr tree))))))
+
+;; now with map
+(define (square-tree-map tree)
+  (map (λ (x)
+         (if (pair? x)
+             (square-tree-map x)
+             (square x)))
+       tree))
+
+;; 2.31
+(define (tree-map f tree)
+  (map (λ (x)
+         (if (pair? x)
+             (tree-map f x)
+             (f x)))
+       tree))
+
+(define (sq-tree tree)
+  (tree-map square tree))
+
+;; 2.32
+(define (subsets s)
+  (if (null? s)
+      (list s)
+      (let ((rest (subsets (cdr s))))
+        (append rest (map (λ (x)
+                            (cons (car s) x)) rest)))))
+
+;; 2.33
+(define (accumulate op initial sequence)
+  (if (null? sequence)
+      initial
+      (op (car sequence)
+          (accumulate op
+                      initial
+                      (cdr sequence)))))
+
+(define (acc-map p sequence)
+  (accumulate (lambda (x y) (cons (p x) y))
+              nil sequence))
+
+(define (acc-append seq1 seq2)
+  (accumulate cons seq2 seq1))
+
+(define (acc-length sequence)
+  (accumulate (λ (x y) (+ 1 y)) 0 sequence))
+
+(define dl '(((1) 2 (3 4)) 5 6 (7 ((8 ((9 10) 11)))) 12 13))
