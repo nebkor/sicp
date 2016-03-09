@@ -13,6 +13,7 @@
           (len (+ 1 len)))
       (exact->inexact (/ sum len)))))
 
+(define nil '())
 
 ;; 2.1 supporting
 (define (add-rat x y)
@@ -338,10 +339,14 @@
 ;; http://www.billthelizard.com/2010/12/sicp-218-reversing-list.html. I
 ;; will try to have more confidence in what my intellect is telling me
 ;; with regard to things like types when writing code.
+;;
 (define (rr l)
   (if (null? l)
       l
       (append (rr (cdr l)) (list (car l)))))
+;;
+;; Also, see comments below about the "natural" behavior of functions
+;; on sequences, with respect to recursive/iterative and cons'd/appended.
 
 ;; 2.19
 (define (no-more? cl)
@@ -417,3 +422,28 @@
 ;; wasteful to construct a result list twice. given the above definition
 ;; of "append", I think there are more conses done in the version using
 ;; "append".
+
+;; 2.22
+;; Basically, do what I did for funsies :)
+;;
+(define (square-list-improper items)
+  (define (iter things answer)
+    (if (null? things)
+        answer
+        (iter (cdr things)
+              (cons answer
+                    (square
+                     (car things))))))
+  (iter items nil))
+
+;; The second version given as an example results in a construct like:
+;; (cons '() (cons (square (car items)) (cons (square (cadr items ....
+;; which is an improper list
+
+;; 2.23
+(define (foreach f l)
+  (if (null? l)
+      #t
+      ((λ () ;; idiomatic Scheme would be to use a (begin ...) statement
+          (f (car l))
+          (foreach f (cdr l))))))
