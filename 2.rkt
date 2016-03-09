@@ -531,10 +531,10 @@
 ;; 2.29
 ;; given make-mobile and make-branch
 (define (make-mobile left right)
-  (list left right))
+  (cons left right))
 
 (define (make-branch length structure)
-  (list length structure))
+  (cons length structure))
 
 ;; define left-branch, right-branch, branch-length, branch-structure,
 ;; and total-weight
@@ -542,13 +542,13 @@
   (car m))
 
 (define (right-branch m)
-  (cadr m))
+  (cdr m))
 
 (define (branch-length b)
   (car b))
 
 (define (branch-structure b)
-  (cadr b))
+  (cdr b))
 
 (define (total-weight m)
   (let ((l (left-branch m))
