@@ -484,33 +484,46 @@
 ;; racket@> (deep-reverse '((1 (2 3) 4) 5 6 (((7) 8) 9) 10))
 ;; '(10 (9 (8 (7))) 6 5 (4 (3 2) 1))
 
+(define (mk-counter n)
+  (λ ()
+    (set! n (+ 1 n))
+    (displayln n)))
+
 ;; 2.28
 ;; first pass
 (define (fringe t)
-  (define (iter t res)
-    (cond
-     ((null? t) res)
-     ((atom? (car t)) (iter (cdr t) (append res (list (car t)))))
-     (else
-      (append (iter (car t) res)
-              (iter (cdr t) '())))))
-  (iter t '()))
-
-;; fully recursive
-(define (fringe-recursive t)
-  (cond
-   ((null? t) t)
-   ((atom? t) (list t))
-   (else
-    (append (fringe-recursive (car t))
-            (fringe-recursive (cdr t))))))
-
-;; most iterative
-(define (fringe-iter t)
-  (define (iter t res)
+  (define (iter t res c)
+    (c)
     (cond
      ((null? t) res)
      ((atom? t) (cons t res))
      (else
-      (iter (car t) (iter (cdr t) res)))))
-  (iter t '()))
+      (append (iter (car t) res c)
+              (iter (cdr t) '() c)))))
+  (iter t '() (mk-counter 0)))
+
+;; fully recursive
+(define (fringe-recursive t c)
+  (c)
+  (cond
+   ((null? t) t)
+   ((atom? t) (list t))
+   (else
+    (append (fringe-recursive (car t) c)
+            (fringe-recursive (cdr t) c)))))
+
+;; most iterative?
+(define (fringe-iter t)
+  (define (iter t res c)
+    (c)
+    (cond
+     ((null? t) res)
+     ((atom? t) (cons t res))
+     (else
+      (iter (car t) (iter (cdr t) res c) c))))
+  (iter t '() (mk-counter 0)))
+
+;; All three solutions take 43 steps to flatten the list
+;; '(((1) 2 (3 4)) 5 6 (7 ((8 ((9 10) 11)))) 12 13), as given by the output
+;; of the counter during running. However, "append" might be more expensive
+;; than "cons".
