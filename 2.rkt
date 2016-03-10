@@ -703,3 +703,26 @@
 (define (acc-count-leaves t)
   (accumulate + 0 (map (λ (x) 1) (fringe t))))
 ;; better would be "(length (fringe t))"
+
+;; 2.36
+(define (accumulate-n op init seqs)
+  (if (null? (car seqs))
+      nil
+      (cons (accumulate op init (map car seqs))
+            (accumulate-n op init (map cdr seqs)))))
+
+;; 2.37
+(define (dot-product v w)
+  (accumulate + 0 (map * v w)))
+
+(define (matrix-*-vector m v)
+  (map (λ (x) (dot-product x v)) m))
+
+(define (transpose mat)
+  (accumulate-n (λ (x y) (cons x y)) '() mat))
+
+(define (matrix-*-matrix m n)
+  (let ((cols (transpose n)))
+    (map (λ (v) (matrix-*-vector cols v)) m)))
+
+;; 2.38
