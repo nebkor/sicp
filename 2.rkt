@@ -15,8 +15,50 @@
 
 (define nil '())
 
+(define (square x)
+  (* x x))
+
 (define (atom? x)
   (not (pair? x)))
+
+(define (check-square x m)
+  (let ((rsx (remainder (square x) m)))
+    (if (and (not (or (= x 1) (= x (- m 1))))
+             (= rsx 1))
+        0
+        rsx)))
+
+(define (expmod2 base exp m)
+  (cond ((= exp 0) 1)
+        ((even? exp)
+         (check-square (expmod2 base (/ exp 2) m) m))
+        (else
+         (remainder (* base (expmod2 base (- exp 1) m)) m))))
+
+(define (fermat-test n)
+  (define (try-it a)
+    (= (expmod2 a n n) a))
+  (try-it (+ 1 (random (- n 1)))))
+
+(define (fast-prime? n times)
+  (cond ((= times 0) true)
+        ((fermat-test n) (fast-prime? n (- times 1)))
+        (else false)))
+
+(define (miller-rabin-test n)
+  (define (try-it a)
+    (let ((res (expmod2 a (- n 1) n)))
+      (= res 1)))
+  (try-it (+ 1 (random (- n 1)))))
+
+(define (fast-correct-prime? n times)
+  (cond ((= times 0) true)
+        ((miller-rabin-test n) (fast-prime? n (- times 1)))
+        (else false)))
+
+(define (prime? n)
+  (fast-correct-prime? n (ceiling (sqrt n))))
+
 
 ;; 2.1 supporting
 (define (add-rat x y)
@@ -671,14 +713,6 @@
                       initial
                       (cdr sequence)))))
 
-;; iterative accumulate from exercise 1.32
-(define (fold-left op initial sequence)
-  (define (iter l res)
-    (if (null? l)
-        res
-        (iter (cdr l) (op res (car l)))))
-  (iter sequence initial))
-
 (define (acc-map p sequence)
   (accumulate (lambda (x y) (cons (p x) y))
               nil sequence))
@@ -726,3 +760,86 @@
     (map (λ (v) (matrix-*-vector cols v)) m)))
 
 ;; 2.38
+;; fold-left given in the text
+(define (fold-left op initial sequence)
+  (define (iter result rest)
+    (if (null? rest)
+        result
+        (iter (op result (car rest))
+              (cdr rest))))
+  (iter initial sequence))
+
+(define fold-right accumulate)
+
+;; racket@> (fold-right / 1 (list 1 2 3))
+;; 3/2
+;; racket@> (fold-left / 1 (list 1 2 3))
+;; 1/6
+;; racket@> (fold-right list nil (list 1 2 3))
+;; '(1 (2 (3 ())))
+;; racket@> (fold-left list nil (list 1 2 3))
+;; '(((() 1) 2) 3)
+
+;; 2.39
+(define (reverse-fr sequence)
+  (fold-right
+   (lambda (x y) (append y (list x))) nil sequence))
+
+(define (reverse-fl sequence)
+  (fold-left
+   (lambda (x y) (cons y x)) nil sequence))
+
+;; filling in enumerate-interval
+(define (enumerate-interval start end)
+  (range start (+ 1 end)))
+
+(define (flatmap proc seq)
+  (accumulate append nil (map proc seq)))
+
+(define (prime-sum? pair)
+  (prime? (+ (car pair) (cadr pair))))
+
+(define (make-pair-sum pair)
+  (list (car pair)
+        (cadr pair)
+        (+ (car pair) (cadr pair))))
+
+(define (prime-sum-pairs n)
+  (map make-pair-sum
+       (filter
+        prime-sum?
+        (flatmap
+         (lambda (i)
+           (map (lambda (j)
+                  (list i j))
+                (enumerate-interval
+                 1
+                 (- i 1))))
+         (enumerate-interval 1 n)))))
+
+(define (permutations s)
+  (if (null? s)   ; empty set?
+      (list nil)  ; sequence containing empty set
+      (flatmap (lambda (x)
+                 (map (lambda (p)
+                        (cons x p))
+                      (permutations
+                       (remove x s))))
+               s)))
+
+;; ex 2.40
+;; Define a procedure unique-pairs that, given an integer n , generates the
+;; sequence of pairs ( i , j ) with 1 ≤ j < i ≤ n . Use unique-pairs to
+;; simplify the definition of prime-sum-pairs given above.
+
+(define (unique-pairs n)
+  (let [(nums (enumerate-interval 1 n))]
+    (filter (λ (x) (< (cadr x) (car x)))
+            (flatmap (λ (x)
+                       (map (λ (y)
+                              (list y x))
+                            nums))
+                     nums))))
+
+(define (psp n)
+  (map make-pair-sum (filter prime-sum? (unique-pairs n))))
