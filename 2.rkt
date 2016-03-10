@@ -446,7 +446,7 @@
 ;; 2.23
 (define (foreach f l)
   (if (null? l)
-      #t
+      (void)
       ((λ () ;; idiomatic Scheme would be to use a (begin ...) statement
           (f (car l))
           (foreach f (cdr l))))))
@@ -671,6 +671,14 @@
                       initial
                       (cdr sequence)))))
 
+;; iterative accumulate from exercise 1.32
+(define (fold-left op initial sequence)
+  (define (iter l res)
+    (if (null? l)
+        res
+        (iter (cdr l) (op res (car l)))))
+  (iter sequence initial))
+
 (define (acc-map p sequence)
   (accumulate (lambda (x y) (cons (p x) y))
               nil sequence))
@@ -682,3 +690,16 @@
   (accumulate (λ (x y) (+ 1 y)) 0 sequence))
 
 (define dl '(((1) 2 (3 4)) 5 6 (7 ((8 ((9 10) 11)))) 12 13))
+
+;; 2.34
+(define (horner-eval x coefficient-sequence)
+  (accumulate
+   (lambda (this-coeff higher-terms)
+     (+ (* x higher-terms) this-coeff))
+   0
+   coefficient-sequence))
+
+;; 2.35
+(define (acc-count-leaves t)
+  (accumulate + 0 (map (λ (x) 1) (fringe t))))
+;; better would be "(length (fringe t))"
