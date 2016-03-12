@@ -59,6 +59,14 @@
 (define (prime? n)
   (fast-correct-prime? n (ceiling (sqrt n))))
 
+(define (filter predicate sequence)
+  (cond ((null? sequence) nil)
+        ((predicate (car sequence))
+         (cons (car sequence)
+               (filter predicate
+                       (cdr sequence))))
+        (else  (filter predicate
+                       (cdr sequence)))))
 
 ;; 2.1 supporting
 (define (add-rat x y)
@@ -195,17 +203,17 @@
 ;; 2.4
 ;; define kdr given kons and kar
 (define (kons x y)
-  (λ (m) (m x y)))
+  (lambda (m) (m x y)))
 
 (define (kar z)
-  (z (λ (p q) p)))
+  (z (lambda (p q) p)))
 
 ;; z is a procedure that takes a procedure that takes two arguments
 ;; and returns its second argument. z applies the original x and y
 ;; (from the kons call that created z) as arguments to the procedure
 ;; it gets from kdr.
 (define (kdr z)
-  (z (λ (p q) q)))
+  (z (lambda (p q) q)))
 
 ;; 2.5
 ;; show that we can represent pairs of non-negative integers
@@ -230,9 +238,6 @@
 ;; 2.6
 (define zero (lambda (f) (lambda (x) x)))
 
-(define (zero f)
-  (λ (x) x))
-
 (define (add-1 n)
   (lambda (f) (lambda (x) (f ((n f) x)))))
 
@@ -245,7 +250,7 @@
 
 ;; could also define like:
 (define (one f)
-  (λ (x) (f x)))
+  (lambda (x) (f x)))
 
 (define two (lambda (f) (lambda (x) (f (f x)))))
 
@@ -253,7 +258,7 @@
   (+ 1 n))
 
 (define (add-church m n)
-  (λ (f) (λ (x) ((m f) ((n f) x)))))
+  (lambda (f) (lambda (x) ((m f) ((n f) x)))))
 
 ;; racket@> ((one inc) 0)
 ;; 1
@@ -488,8 +493,8 @@
 ;; 2.23
 (define (foreach f l)
   (if (null? l)
-      (void)
-      ((λ () ;; idiomatic Scheme would be to use a (begin ...) statement
+      true
+      ((lambda () ;; idiomatic Scheme would be to use a (begin ...) statement
           (f (car l))
           (foreach f (cdr l))))))
 
@@ -527,9 +532,10 @@
 ;; '(10 (9 (8 (7))) 6 5 (4 (3 2) 1))
 
 (define (mk-counter n)
-  (λ ()
+  (lambda ()
     (set! n (+ 1 n))
-    (displayln n)))
+    (display n)
+    (newline)))
 
 ;; 2.28
 ;; first pass
@@ -679,7 +685,7 @@
 
 ;; now with map
 (define (square-tree-map tree)
-  (map (λ (x)
+  (map (lambda (x)
          (if (pair? x)
              (square-tree-map x)
              (square x)))
@@ -687,7 +693,7 @@
 
 ;; 2.31
 (define (tree-map f tree)
-  (map (λ (x)
+  (map (lambda (x)
          (if (pair? x)
              (tree-map f x)
              (f x)))
@@ -701,7 +707,7 @@
   (if (null? s)
       (list s)
       (let ((rest (subsets (cdr s))))
-        (append rest (map (λ (x)
+        (append rest (map (lambda (x)
                             (cons (car s) x)) rest)))))
 
 ;; 2.33
@@ -721,7 +727,7 @@
   (accumulate cons seq2 seq1))
 
 (define (acc-length sequence)
-  (accumulate (λ (x y) (+ 1 y)) 0 sequence))
+  (accumulate (lambda (x y) (+ 1 y)) 0 sequence))
 
 (define dl '(((1) 2 (3 4)) 5 6 (7 ((8 ((9 10) 11)))) 12 13))
 
@@ -735,7 +741,7 @@
 
 ;; 2.35
 (define (acc-count-leaves t)
-  (accumulate + 0 (map (λ (x) 1) (fringe t))))
+  (accumulate + 0 (map (lambda (x) 1) (fringe t))))
 ;; better would be "(length (fringe t))"
 
 ;; 2.36
@@ -750,14 +756,14 @@
   (accumulate + 0 (map * v w)))
 
 (define (matrix-*-vector m v)
-  (map (λ (x) (dot-product x v)) m))
+  (map (lambda (x) (dot-product x v)) m))
 
 (define (transpose mat)
-  (accumulate-n (λ (x y) (cons x y)) '() mat))
+  (accumulate-n (lambda (x y) (cons x y)) '() mat))
 
 (define (matrix-*-matrix m n)
   (let ((cols (transpose n)))
-    (map (λ (v) (matrix-*-vector cols v)) m)))
+    (map (lambda (v) (matrix-*-vector cols v)) m)))
 
 ;; 2.38
 ;; fold-left given in the text
@@ -790,8 +796,17 @@
    (lambda (x y) (cons y x)) nil sequence))
 
 ;; filling in enumerate-interval
-(define (enumerate-interval start end)
-  (range start (+ 1 end)))
+(define (enumerate-interval low high)
+  (if (> low high)
+      nil
+      (cons low
+            (enumerate-interval
+             (+ low 1)
+             high))))
+
+(define (remove item sequence)
+  (filter (lambda (x) (not (= x item)))
+          sequence))
 
 (define (flatmap proc seq)
   (accumulate append nil (map proc seq)))
@@ -834,12 +849,84 @@
 
 (define (unique-pairs n)
   (let [(nums (enumerate-interval 1 n))]
-    (filter (λ (x) (< (cadr x) (car x)))
-            (flatmap (λ (x)
-                       (map (λ (y)
+    (filter (lambda (x) (< (cadr x) (car x)))
+            (flatmap (lambda (x)
+                       (map (lambda (y)
                               (list y x))
                             nums))
                      nums))))
 
 (define (psp n)
   (map make-pair-sum (filter prime-sum? (unique-pairs n))))
+
+;; 2.41
+(define (ordered-triples n)
+  (let [(nums (enumerate-interval 1 n))]
+    (filter (lambda (x) (<= (car x) (cadr x) (caddr x)))
+            (flatmap (lambda (x)
+                       (flatmap (lambda (y)
+                                  (map (lambda (z) (list x y z))
+                                       nums))
+                                nums))
+                     nums))))
+
+(define (ordered-triples-sum-to-s n s)
+  (filter (lambda (x) (= s (apply + x)))
+          (ordered-triples n)))
+
+;; 2.42
+;; implement the missing procedures from "queens", "safe?" and "adjoin-position"
+(define empty-board '())
+
+(define (safe? col positions)
+  (let [(my-queen (list-ref positions (- col 1)))
+        (enemies (filter (lambda (x) (not (= col (position-col x)))) positions))]
+
+    (define (attacks? q1 q2)
+      (let [(r1 (position-row q1))
+            (c1 (position-col q1))
+            (r2 (position-row q2))
+            (c2 (position-col q2))]
+        (or (= r1 r2)
+            (= (abs (- r1 r2))
+               (abs (- c1 c2))))))
+
+    (define (iter q board)
+      (or (null? board)
+          (and (not (attacks? q (car board)))
+               (iter q (cdr board)))))
+
+    (iter my-queen enemies)))
+
+(define (make-position row col)
+  (cons row col))
+
+(define (position-row position)
+  (car position))
+
+(define (position-col position)
+  (cdr position))
+
+(define (adjoin-position row col positions)
+  (let [(pos (make-position row col))]
+    (append positions (list pos))))
+
+(define (queens board-size)
+  (define (queen-cols k)
+    (if (= k 0)
+        (list empty-board)
+        (filter
+         (lambda (positions)
+           (safe? k positions))
+         (flatmap
+          (lambda (rest-of-queens)
+            (map (lambda (new-row)
+                   (adjoin-position
+                    new-row
+                    k
+                    rest-of-queens))
+                 (enumerate-interval
+                  1
+                  board-size)))
+          (queen-cols (- k 1))))))
+  (queen-cols board-size))
