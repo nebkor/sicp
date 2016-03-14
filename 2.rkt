@@ -650,8 +650,6 @@
   (+ (branch-weight (left-branch m))
      (branch-weight (right-branch m))))
 
-
-
 (define (branch-torque b)
   (* (branch-length b) (branch-weight b)))
 
