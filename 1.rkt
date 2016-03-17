@@ -737,3 +737,12 @@
     f
     (λ (x) (< (abs (- (f x) x)) fp-tolerance)))
    guess))
+
+(define (n-bonacci last n)
+  (let loop ([l (append (build-list (- n 1) (λ (x) 0))
+                        '(1))]
+             [c 1])
+    (if (< c last)
+        (loop (cdr (append l (list (apply + l))))
+              (+ c 1))
+        (list-ref l (- n 1)))))
