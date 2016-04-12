@@ -41,6 +41,16 @@
           (make-product
            (deriv (multiplier exp) var)
            (multiplicand exp))))
+        [(exponentiation? exp)
+         (let* ([b (base exp)]
+                [e (exponent exp)]
+                [d (deriv b var)])
+           (make-product
+            (make-product e
+                          (make-exponentiation
+                           b
+                           (make-sum e -1)))
+            d))]
         (else (error "unknown expression
                       type: DERIV" exp))))
 
@@ -98,6 +108,8 @@
 
 (define (make-exponentiation base exponent)
   (cond
-   [(=number? base 0) 0]
    [(=number? exponent 0) 1]
+   [(=number? exponent 1) base]
+   [(=number? base 0) 0]
+   [(=number? base 1) 1]
    [else (list '** base exponent)]))
