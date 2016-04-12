@@ -113,13 +113,13 @@
             (/ d g)))))
 
 ;; 2.2
-(define (make-segment p1 p2)
+(define (make-segment-22 p1 p2)
   (cons p1 p2))
 
-(define (start-segment p)
+(define (start-segment-22 p)
   (car p))
 
-(define (end-segment p)
+(define (end-segment-22 p)
   (cdr p))
 
 (define (make-point x y)
@@ -253,9 +253,6 @@
   (lambda (x) (f x)))
 
 (define two (lambda (f) (lambda (x) (f (f x)))))
-
-(define (inc n)
-  (+ 1 n))
 
 (define (add-church m n)
   (lambda (f) (lambda (x) ((m f) ((n f) x)))))
@@ -928,3 +925,217 @@
                   board-size)))
           (queen-cols (- k 1))))))
   (queen-cols board-size))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SECTION 2.2.4
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (flipped-pairs painter)
+  (let ((painter2
+         (beside painter
+                 (flip-vert painter))))
+    (below painter2 painter2)))
+
+(define (right-split painter n)
+  (if (= n 0)
+      painter
+      (let ((smaller (right-split painter
+                                  (- n 1))))
+        (beside painter
+                (below smaller smaller)))))
+
+(define (corner-split painter n)
+  (if (= n 0)
+      painter
+      (let ((up (up-split painter (- n 1)))
+            (right (right-split painter
+                                (- n 1))))
+        (let ((top-left (beside up up))
+              (bottom-right (below right
+                                   right))
+              (corner (corner-split painter
+                                    (- n 1))))
+          (beside (below painter top-left)
+                  (below bottom-right
+                         corner))))))
+
+(define (square-limit painter n)
+  (let ((quarter (corner-split painter n)))
+    (let ((half (beside (flip-horiz quarter)
+                        quarter)))
+      (below (flip-vert half) half))))
+
+;; 2.44
+(define (up-split painter n)
+  (if (= n 0)
+      painter
+      (let ([smaller (up-split painter (- n 1))])
+        (below painter
+               (beside smaller smaller)))))
+
+;; given in the text
+(define (square-of-four tl tr bl br)
+  (lambda (painter)
+    (let ((top (beside (tl painter)
+                       (tr painter)))
+          (bottom (beside (bl painter)
+                          (br painter))))
+      (below bottom top))))
+
+(define (flipped-pairs2 painter)
+  (let ((combine4
+         (square-of-four identity
+                         flip-vert
+                         identity
+                         flip-vert)))
+    (combine4 painter)))
+
+(define (square-limit2 painter n)
+  (let ((combine4
+         (square-of-four flip-horiz
+                         identity
+                         rotate180
+                         flip-vert)))
+    (combine4 (corner-split painter n))))
+
+;; 2.45
+;; now define split to generalize things like up-split and right-split
+(define (split t1 t2)
+  (define (t painter n)
+    (if (= n 0)
+        painter
+        (let ([smaller (t painter (- n 1))])
+          (t1 painter
+              (t2 smaller smaller)))))
+  t)
+
+;; so now you can do
+(define right-split2 (split beside below))
+(define up-split2 (split below beside))
+
+(define (frame-coord-map frame)
+  (lambda (v)
+    (add-vect
+     (origin-frame frame)
+     (add-vect
+      (scale-vect (xcor-vect v)
+                  (edge1-frame frame))
+      (scale-vect (ycor-vect v)
+                  (edge2-frame frame))))))
+
+;; 2.46
+
+;; make-vect is already defined as cons
+(define (xcor-vect v)
+  (car v))
+
+(define (ycor-vect v)
+  (cdr v))
+
+(define (add-vect a b)
+  (let ([ax (xcor-vect a)]
+        [ay (ycor-vect a)]
+        [bx (xcor-vect b)]
+        [by (ycor-vect b)])
+    (make-vect (+ ax bx)
+               (+ ay by))))
+
+(define (scale-vect v s)
+  (let ([vx (xcor-vect v)]
+        [vy (ycor-vect v)])
+    (make-vect (* s vx) (* s vy))))
+
+(define (sub-vect a b)
+  (add-vect a (scale-vect b -1)))
+
+;; 2.47
+;; given:
+(define (make-frame-list origin edge1 edge2)
+  (list origin edge1 edge2))
+
+(define (make-frame-cons origin edge1 edge2)
+  (cons origin (cons edge1 edge2)))
+
+;; write the appropriate selectors origin-frame, edge1-frame, edge2-frame
+;;
+(define (origin-frame-cons f)
+  (car f))
+(define (edge1-frame-cons f)
+  (cadr f))
+(define (edge2-frame-cons f)
+  (cddr f))
+
+(define (origin-frame-list f)
+  (car f))
+(define (edge1-frame-list f)
+  (cadr f))
+(define (edge2-frame-list f)
+  (caddr f))
+
+(define make-frame make-frame-cons)
+(define origin-frame origin-frame-cons)
+(define edge1-frame edge1-frame-cons)
+(define edge2-frame edge2-frame-cons)
+
+;; given in text:
+(define (segments->painter segment-list)
+  (lambda (frame)
+    (for-each
+     (lambda (segment)
+       (draw-line
+        ((frame-coord-map frame)
+         (start-segment segment))
+        ((frame-coord-map frame)
+         (end-segment segment))))
+     segment-list)))
+
+;; backfilled function from segments->painter
+(define (draw-line x y)
+  #t)
+
+;; 2.48
+(define (make-segment start end)
+  (cons start end))
+
+(define (start-segment segment)
+  (car segment))
+
+(define (end-segment segment)
+  (cdr segment))
+
+;; given in text:
+(define (transform-painter
+         painter origin corner1 corner2)
+  (lambda (frame)
+    (let ((m (frame-coord-map frame)))
+      (let ((new-origin (m origin)))
+        (painter (make-frame new-origin
+                  (sub-vect (m corner1)
+                            new-origin)
+                  (sub-vect (m corner2)
+                            new-origin)))))))
+
+(define (flip-vert painter)
+  (transform-painter
+   painter
+   (make-vect 0.0 1.0)   ; new origin
+   (make-vect 1.0 1.0)   ; new end of edge1
+   (make-vect 0.0 0.0))) ; new end of edge2
+
+(define (shrink-to-upper-right painter)
+  (transform-painter painter
+                     (make-vect 0.5 0.5)
+                     (make-vect 1.0 0.5)
+                     (make-vect 0.5 1.0)))
+
+(define (rotate90 painter)
+  (transform-painter painter
+                     (make-vect 1.0 0.0)
+                     (make-vect 1.0 1.0)
+                     (make-vect 0.0 0.0)))
+
+(define (squash-inwards painter)
+  (transform-painter painter
+                     (make-vect 0.0 0.0)
+                     (make-vect 0.65 0.35)
+                     (make-vect 0.35 0.65)))
