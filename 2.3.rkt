@@ -66,14 +66,20 @@
 
 (define (addend s) (cadr s))
 
-(define (augend s) (caddr s))
+(define (augend s)
+  (if (null? (cdddr s))
+      (caddr s)
+      (cons '+ (cddr s))))
 
 (define (product? x)
   (and (pair? x) (eq? (car x) '*)))
 
 (define (multiplier p) (cadr p))
 
-(define (multiplicand p) (caddr p))
+(define (multiplicand p)
+  (if (null? (cdddr p))
+      (caddr p)
+      (cons '* (cddr p))))
 
 (define (make-sum a1 a2)
   (cond ((=number? a1 0) a2)
