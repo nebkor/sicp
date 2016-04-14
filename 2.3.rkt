@@ -119,3 +119,39 @@
    [(=number? base 0) 0]
    [(=number? base 1) 1]
    [else (list base '** exponent)]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SECTION 2.3.3
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; given in text:
+(define (element-of-set? x set)
+  (cond ((null? set) false)
+        ((equal? x (car set)) true)
+        (else (element-of-set? x (cdr set)))))
+
+(define (adjoin-set x set)
+  (if (element-of-set? x set)
+      set
+      (cons x set)))
+
+(define (intersection-set set1 set2)
+  (cond ((or (null? set1) (null? set2))
+         '())
+        ((element-of-set? (car set1) set2)
+         (cons (car set1)
+               (intersection-set (cdr set1)
+                                 set2)))
+        (else (intersection-set (cdr set1)
+                                set2))))
+
+;; 2.59: implement union-set
+(define (union-set s1 s2)
+  (cond
+   [(null? s1) s2]
+   [(null? s2) s1]
+   [(element-of-set? (car s1) s2) (union-set (cdr s1) s2)]
+   [else (union-set (cdr s1) (cons (car s1) s2))]))
+
+;; 2.60: adjoin-set becomes unconditional (cons x set), and union-set becomes
+;; (append s1 s2); the rest work as-is for non-unique-element sets
