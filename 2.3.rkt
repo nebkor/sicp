@@ -62,9 +62,9 @@
        (eq? v1 v2)))
 
 (define (sum? x)
-  (and (pair? x) (eq? (car x) '+)))
+  (and (pair? x) (eq? (cadr x) '+)))
 
-(define (addend s) (cadr s))
+(define (addend s) (car s))
 
 (define (augend s)
   (if (null? (cdddr s))
@@ -72,9 +72,9 @@
       (cons '+ (cddr s))))
 
 (define (product? x)
-  (and (pair? x) (eq? (car x) '*)))
+  (and (pair? x) (eq? (cadr x) '*)))
 
-(define (multiplier p) (cadr p))
+(define (multiplier p) (car p))
 
 (define (multiplicand p)
   (if (null? (cdddr p))
@@ -86,7 +86,7 @@
         ((=number? a2 0) a1)
         ((and (number? a1) (number? a2))
          (+ a1 a2))
-        (else (list '+ a1 a2))))
+        (else (list a1 '+ a2))))
 
 (define (=number? exp num)
   (and (number? exp) (= exp num)))
@@ -99,15 +99,15 @@
         ((=number? m2 1) m1)
         ((and (number? m1) (number? m2))
          (* m1 m2))
-        (else (list '* m1 m2))))
+        (else (list m1 '* m2))))
 
 ;; 2.56: add exponent expressions
 
 (define (exponentiation? exp)
-  (and (pair? exp) (eq? '** (car exp))))
+  (and (pair? exp) (eq? '** (cadr exp))))
 
 (define (base exp)
-  (cadr exp))
+  (car exp))
 
 (define (exponent exp)
   (caddr exp))
@@ -118,4 +118,4 @@
    [(=number? exponent 1) base]
    [(=number? base 0) 0]
    [(=number? base 1) 1]
-   [else (list '** base exponent)]))
+   [else (list base '** exponent)]))
