@@ -167,6 +167,7 @@
 (define (adjoin-ordered-set x s)
   (define (iter s acc done?)
     (cond
+     [(and (not done?) (null? s)) (reverse (cons x acc))]
      [(null? s) (reverse acc)]
      [(= x (car s)) (iter (cdr s) (cons (car s) acc) #t)]
      [(and (not done?) (< x (car s)))
