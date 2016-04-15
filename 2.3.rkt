@@ -179,12 +179,14 @@
 ;; 2.62: write O(n) union-ordered-set
 (define (union-ordered-set s1 s2)
   (define (iter s1 s2 acc)
-    (if (or (null? s2) (null? s1))
-        (reverse acc)
-        (let ([h1 (car s1)]
-              [h2 (car s2)])
-          (cond
-           [(= h1 h2) (iter (cdr s1) (cdr s2) (cons h1 acc))]
-           [(< h1 h2) (iter (cdr s1) s2 acc)]
-           [else (iter s1 (cdr s2) acc)]))))
+    (cond
+     [(null? s2) (append (reverse acc) s1)]
+     [(null? s1) (append (reverse acc) s2)]
+     [else
+      (let ([h1 (car s1)]
+            [h2 (car s2)])
+        (cond
+         [(= h1 h2) (iter (cdr s1) (cdr s2) (cons h1 acc))]
+         [(< h1 h2) (iter (cdr s1) s2 (cons h1 acc))]
+         [else (iter s1 (cdr s2) (cons h2 acc))]))]))
   (iter s1 s2 '()))
