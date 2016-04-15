@@ -155,3 +155,36 @@
 
 ;; 2.60: adjoin-set becomes unconditional (cons x set), and union-set becomes
 ;; (append s1 s2); the rest work as-is for non-unique-element sets
+
+;; given in text for ordered set:
+(define (element-of-ordered-set? x set)
+  (cond ((null? set) false)
+        ((= x (car set)) true)
+        ((< x (car set)) false)
+        (else (element-of-set? x (cdr set)))))
+
+;; 2.61: write order-preserving adjoin-set
+(define (adjoin-ordered-set x s)
+  (define (iter s acc done?)
+    (cond
+     [(null? s) (reverse acc)]
+     [(= x (car s)) (iter (cdr s) (cons (car s) acc) #t)]
+     [(and (not done?) (< x (car s)))
+      (iter (cdr s) (cons (car s) (cons x acc)) #t)]
+     [else (iter (cdr s) (cons (car s) acc) done?)]))
+  (if (null? s)
+      (list x)
+      (iter s '() #f)))
+
+;; 2.62: write O(n) union-ordered-set
+(define (union-ordered-set s1 s2)
+  (define (iter s1 s2 acc)
+    (if (or (null? s2) (null? s1))
+        (reverse acc)
+        (let ([h1 (car s1)]
+              [h2 (car s2)])
+          (cond
+           [(= h1 h2) (iter (cdr s1) (cdr s2) (cons h1 acc))]
+           [(< h1 h2) (iter (cdr s1) s2 acc)]
+           [else (iter s1 (cdr s2) acc)]))))
+  (iter s1 s2 '()))
