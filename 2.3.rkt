@@ -191,3 +191,182 @@
          [(< h1 h2) (iter (cdr s1) s2 (cons h1 acc))]
          [else (iter s1 (cdr s2) (cons h2 acc))]))]))
   (iter s1 s2 '()))
+
+(define (intersection-ordered-set s1 s2)
+  (define (iter s1 s2 acc)
+    (if (or (null? s2) (null? s1))
+        (reverse acc)
+        (let ([h1 (car s1)]
+              [h2 (car s2)])
+          (cond
+           [(= h1 h2) (iter (cdr s1) (cdr s2) (cons h1 acc))]
+           [(< h1 h2) (iter (cdr s1) s2 acc)]
+           [else (iter s1 (cdr s2) acc)]))))
+  (iter s1 s2 '()))
+
+;; given in text for tree ops:
+(define (entry tree) (car tree))
+(define (left-branch tree) (cadr tree))
+(define (right-branch tree) (caddr tree))
+(define (make-tree entry left right)
+  (list entry left right))
+
+(define (element-of-tree-set? x set)
+  (cond ((null? set) false)
+        ((= x (entry set)) true)
+        ((< x (entry set))
+         (element-of-tree-set?
+          x
+          (left-branch set)))
+        ((> x (entry set))
+         (element-of-tree-set?
+          x
+          (right-branch set)))))
+
+(define (adjoin-tree-set x set)
+  (cond ((null? set) (make-tree x '() '()))
+        ((= x (entry set)) set)
+        ((< x (entry set))
+         (make-tree
+          (entry set)
+          (adjoin-tree-set x (left-branch set))
+          (right-branch set)))
+        ((> x (entry set))
+         (make-tree
+          (entry set)
+          (left-branch set)
+          (adjoin-tree-set x (right-branch set))))))
+
+;; 2.63: do the two given tree-flatteners produce the same results
+;; for the same input?
+(define (tree->list-1 tree)
+  (if (null? tree)
+      '()
+      (append
+       (tree->list-1
+        (left-branch tree))
+       (cons (entry tree)
+             (tree->list-1
+              (right-branch tree))))))
+
+(define (tree->list-2 tree)
+  (define (copy-to-list tree result-list)
+    (if (null? tree)
+        result-list
+        (copy-to-list
+         (left-branch tree)
+         (cons (entry tree)
+               (copy-to-list
+                (right-branch tree)
+                result-list)))))
+  (copy-to-list tree '()))
+
+;; the three trees from figure 2.16:
+;;
+;; > (define t1 '(7 (3 (1 () ()) (5 () ())) (9 () (11 () ()))))
+;; > (define t2 '(3 (1 () ()) (7 (5 () ()) (9 () (11 () ())))))
+;; > (define t3 '(5 (3 (1 () ()) ()) (9 (7 () ()) (11 () ()))))
+;; > (tree->list-1 t1)
+;; '(1 3 5 7 9 11)
+;; > (tree->list-1 t2)
+;; '(1 3 5 7 9 11)
+;; > (tree->list-1 t3)
+;; '(1 3 5 7 9 11)
+;; > (tree->list-2 t1)
+;; '(1 3 5 7 9 11)
+;; > (tree->list-2 t2)
+;; '(1 3 5 7 9 11)
+;; > (tree->list-2 t3)
+;; '(1 3 5 7 9 11)
+;;
+;; I think both procedures are order-preserving, so they should return
+;; the same output for a given input.
+
+;; 2.64: given the following:
+(define (list->tree elements)
+  (car (partial-tree
+        elements (length elements))))
+
+(define (partial-tree elts n)
+  (if (= n 0)
+      (cons '() elts)
+      (let ((left-size
+             (quotient (- n 1) 2)))
+        (let ((left-result
+               (partial-tree
+                elts left-size)))
+          (let ((left-tree
+                 (car left-result))
+                (non-left-elts
+                 (cdr left-result))
+                (right-size
+                 (- n (+ left-size 1))))
+            (let ((this-entry
+                   (car non-left-elts))
+                  (right-result
+                   (partial-tree
+                    (cdr non-left-elts)
+                    right-size)))
+              (let ((right-tree
+                     (car right-result))
+                    (remaining-elts
+                     (cdr right-result)))
+                (cons (make-tree this-entry
+                                 left-tree
+                                 right-tree)
+                      remaining-elts))))))))
+
+;; let* for more readability
+(define (pt tlist n)
+  (if (= n 0)
+      (cons '() tlist)
+      (let* ([left-size (quotient (- n 1) 2)]
+             [left-result (pt tlist left-size)]
+             [left-tree (car left-result)]
+             [non-left-elts (cdr left-result)]
+             [right-size (- n (+ left-size 1))]
+             [this-entry (car non-left-elts)]
+             [right-result (pt (cdr non-left-elts) right-size)]
+             [right-tree (car right-result)]
+             [remaining-elts (cdr right-result)])
+        (cons (make-tree this-entry
+                         left-tree
+                         right-tree)
+              remaining-elts))))
+
+
+;; 2.65: write O(n) union and intersection for tree-sets
+(define (union-tree-set s1 s2)
+  (let* ([l1 (tree->list-1 s1)]
+         [l2 (tree->list-1 s2)]
+         [ul (union-ordered-set l1 l2)])
+    (pt ul (length ul))))
+
+(define (intersection-tree-set s1 s2)
+  (let* ([l1 (tree->list-1 s1)]
+         [l2 (tree->list-1 s2)]
+         [il (intersection-ordered-set l1 l2)])
+    (pt il (length il))))
+
+;; 2.66: implement lookup procedure for a database where the entries
+;; are a set of records organized into a balanced tree with the entries'
+;; keys serving as the ordering value
+
+(define mkrecord cons)
+
+(define (key record)
+  (car record))
+
+(define (body record)
+  (cdr record))
+
+(define (lookup given-key records)
+  (cond
+   [(null? records) false]
+   [(= given-key (key (entry records))) (entry records)]
+   [(< given-key (key (entry records))) (lookup
+                                         given-key
+                                         (left-branch records))]
+   [(> given-key (key (entry records))) (lookup
+                                         given-key
+                                         (right-branch records))]))
