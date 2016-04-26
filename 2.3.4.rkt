@@ -69,7 +69,7 @@
 (define (make-leaf-set pairs)
   (if (null? pairs)
       '()
-      (let ((pair (car pairs)))
+      (let [(pair (car pairs))]
         (adjoin-set
          (make-leaf (car pair)    ; symbol
                     (cadr pair))  ; frequency
@@ -104,7 +104,9 @@
 
 ;; 2.68: implement encode-symbol, use the given sample-message and sample-tree
 ;; to test the finished encode function.
-(define (encode-symbol sym tree)
+
+;; First pass with iterative/accumulator
+(define (encode-symbol-iter sym tree)
   (define (iter t res)
     (if (leaf? t)
         (reverse res)
@@ -117,6 +119,62 @@
       (error (~a "Symbol '" sym "' is not in the given tree."))
       (iter tree '())))
 
+;; now fully recursive solution; shorter and cleaner.
+(define (encode-symbol sym tree)
+  (if (leaf? tree)
+      '()
+      (let ([left (left-branch tree)]
+            [right (right-branch tree)])
+        (cond
+         [(member? sym (symbols left)) (cons 0 (encode-symbol sym left))]
+         [(member? sym (symbols right)) (cons 1 (encode-symbol sym right))]
+         [else (error (~a "Symbol '" sym "' is not in the given tree."))]))))
+
 ;; racket@2.3.4.rkt> (equal? sample-message
 ;;                           (encode (decode sample-message sample-tree) sample-tree))
 ;; #t
+
+;; 2.69. Given the following generate-huffman-tree function, implement
+;; the successive-merge function to complete it.
+(define (generate-huffman-tree pairs)
+  (successive-merge
+   (make-leaf-set pairs)))
+
+(define (successive-merge leaf-set)
+  (if (null? (cdr leaf-set))
+      (car leaf-set)
+      (successive-merge
+       (adjoin-set
+        (make-code-tree (car leaf-set) (cadr leaf-set))
+        (cddr leaf-set)))))
+
+;; 2.70: some cutesy shit with old songs
+(define job-tree
+  (generate-huffman-tree
+   '((wah 1) (boom 1) (a 2) (job 2) (get 2) (sha 3) (yip 9) (na 16))))
+
+(define job-song
+  (map string->symbol
+       (string-split
+        "get a job sha na na na na na na na na get a job sha na na na na na na na na wah yip yip yip yip yip yip yip yip yip sha boom")))
+
+;; racket@2.3.4.rkt> job-tree
+;; '((leaf na 16)
+;;   ((leaf yip 9)
+;;    (((leaf a 2) ((leaf boom 1) (leaf wah 1) (boom wah) 2) (a boom wah) 4)
+;;     ((leaf sha 3) ((leaf get 2) (leaf job 2) (get job) 4) (sha get job) 7)
+;;     (a boom wah sha get job)
+;;     11)
+;;    (yip a boom wah sha get job)
+;;    20)
+;;   (na yip a boom wah sha get job)
+;;   36)
+;; racket@2.3.4.rkt> (string-join (map number->string (encode job-song job-tree)) "")
+;; "111101100111111110000000001111011001111111100000000011011101010101010101010111011010"
+;;
+;; That's 84 bits for the huffman encoding for that song and tree. Without
+;; huffman encoding, that would be 84 * 3 bits for the shortest possible
+;; fixed-length encoding.
+
+;; 2.71: not sketching it out, but in general, most frequent symbol requires
+;; only one bit, and least-frequent requires log(n) bits.
