@@ -74,13 +74,13 @@
                                 (random-in-range lower-y upper-y)))])
     (* area (monte-carlo trials experiment))))
 
-;; 3.6 write something that allows a password-protected account to be
+;; 3.7 write something that allows a password-protected account to be
 ;; accessed with an alias and different password
 (define (make-joint acc opw npw)
   (λ (m p)
     (if (equal? p npw)
         (acc m opw)
-        (acc m (list (random) (gensym))))))
+        (acc m (cons (random) (gensym))))))
 
 ;; racket@3.1.rkt> (define foo (make-account 100 'foo))
 ;; racket@3.1.rkt> (define bar (make-joint foo 'foo 'bar))
@@ -94,3 +94,20 @@
 ;; 80
 ;; racket@3.1.rkt> ((bar 'withdraw 'butts) 0)
 ;; Incorrect password
+
+;; 3.8: write a stateful function that can help determine evaluation order
+(define (mk-f)
+  (let ([check 'undef])
+    (λ (x)
+      (if (equal? check 'undef)
+          (begin
+            (set! check x)
+            0)
+          check))))
+
+;; racket@3.1.rkt> (define f (mk-f))
+;; racket@3.1.rkt> (+ (f 1) (f 0))
+;; 1
+;; racket@3.1.rkt> (define f (mk-f))
+;; racket@3.1.rkt> (+ (f 0) (f 1))
+;; 0
