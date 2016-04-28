@@ -73,3 +73,24 @@
         [experiment (λ () (pred (random-in-range lower-x upper-x)
                                 (random-in-range lower-y upper-y)))])
     (* area (monte-carlo trials experiment))))
+
+;; 3.6 write something that allows a password-protected account to be
+;; accessed with an alias and different password
+(define (make-joint acc opw npw)
+  (λ (m p)
+    (if (equal? p npw)
+        (acc m opw)
+        (acc m (list (random) (gensym))))))
+
+;; racket@3.1.rkt> (define foo (make-account 100 'foo))
+;; racket@3.1.rkt> (define bar (make-joint foo 'foo 'bar))
+;; racket@3.1.rkt> ((foo 'withdraw 'foo) 10)
+;; 90
+;; racket@3.1.rkt> ((bar 'withdraw 'bar) 0)
+;; 90
+;; racket@3.1.rkt> ((bar 'withdraw 'bar) 10)
+;; 80
+;; racket@3.1.rkt> ((foo 'withdraw 'foo) 0)
+;; 80
+;; racket@3.1.rkt> ((bar 'withdraw 'butts) 0)
+;; Incorrect password
